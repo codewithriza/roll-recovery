@@ -1,0 +1,21 @@
+{
+  "name": "roll-recovery",
+  "version": "2.0.0",
+  "description": "TSBIE Hall Ticket Recovery - Web Edition. Find hall tickets with just a roll number.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "tsbie",
+    "hall-ticket",
+    "roll-recovery"
+  ],
+  "author": "codewithriza",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "puppeteer": "^24.39.1"
+  }
+}
