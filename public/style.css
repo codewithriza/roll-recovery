@@ -1,0 +1,4 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: system-ui, sans-serif; background: #fff; color: #111; }
+.wrap { max-width: 640px; margin: 0 auto; padding: 24px; }
+.hidden { display: none; }
