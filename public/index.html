@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roll Recovery — TSBIE</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="wrap">
+        <h1>TSBIE Hall Ticket Recovery</h1>
+        <form id="scanForm">
+            <input type="text" id="roll" placeholder="Roll Number" required>
+            <input type="date" id="startDate" value="2008-01-01">
+            <input type="date" id="endDate" value="2009-12-31">
+            <button type="submit">Start Scan</button>
+        </form>
+        <div id="progressSection" class="hidden"></div>
+        <div id="resultSection" class="hidden"></div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
