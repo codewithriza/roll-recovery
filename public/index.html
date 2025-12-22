@@ -3,21 +3,271 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Roll Recovery — TSBIE</title>
+    <title>Roll Recovery — TSBIE Security Research PoC</title>
+    <meta name="description" content="Security research tool demonstrating authentication vulnerabilities on the TSBIE student portal.">
+    <meta name="author" content="codewithriza">
+    <meta name="theme-color" content="#0a0a0a">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="wrap">
-        <h1>TSBIE Hall Ticket Recovery</h1>
-        <form id="scanForm">
-            <input type="text" id="roll" placeholder="Roll Number" required>
-            <input type="date" id="startDate" value="2008-01-01">
-            <input type="date" id="endDate" value="2009-12-31">
-            <button type="submit">Start Scan</button>
-        </form>
-        <div id="progressSection" class="hidden"></div>
-        <div id="resultSection" class="hidden"></div>
+
+    <!-- Confirmation Modal -->
+    <div class="modal-overlay" id="confirmModal">
+        <div class="modal">
+            <div class="modal-glow"></div>
+            <div class="modal-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <h2 class="modal-title">Authorization Required</h2>
+            <p class="modal-desc">Before proceeding, you must confirm that you are authorized to use this security research tool.</p>
+            <div class="modal-terms">
+                <div class="modal-term-header">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    Terms of Use
+                </div>
+                <div class="modal-term-body">
+                    <p>This tool performs automated credential recovery against the TSBIE portal. It is intended <strong>exclusively</strong> for:</p>
+                    <ul>
+                        <li><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Students recovering their <strong>own</strong> hall ticket data</li>
+                        <li><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Security researchers conducting <strong>authorized</strong> audits</li>
+                        <li><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Educators demonstrating authentication vulnerabilities</li>
+                    </ul>
+                    <div class="modal-warning">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                        <span>Unauthorized use to access third-party data without consent may violate applicable laws including the <strong>IT Act, 2000 (India)</strong>.</span>
+                    </div>
+                </div>
+            </div>
+            <label class="modal-checkbox">
+                <input type="checkbox" id="modalConsent">
+                <div class="checkbox-custom"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+                <span>I confirm I am authorized to recover this data or am performing a security audit</span>
+            </label>
+            <div class="modal-actions">
+                <button class="btn btn-primary btn-lg" id="modalAcceptBtn" disabled>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    Accept & Continue
+                </button>
+                <p class="modal-hint">You must accept the terms to proceed</p>
+            </div>
+        </div>
     </div>
+
+    <!-- Main App -->
+    <div class="app" id="mainApp" style="display:none;">
+        <div class="ambient-bg">
+            <div class="ambient-orb ambient-orb-1"></div>
+            <div class="ambient-orb ambient-orb-2"></div>
+        </div>
+        <div class="wrap">
+            <!-- Nav -->
+            <nav class="nav">
+                <a href="/" class="brand">
+                    <div class="brand-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+                    <span class="brand-name">roll-recovery</span>
+                    <span class="brand-version">v2.0</span>
+                </a>
+                <div class="nav-right">
+                    <span class="nav-status" id="navStatus"><span class="nav-status-dot"></span> Ready</span>
+                    <a href="https://github.com/codewithriza/roll-recovery" target="_blank" rel="noopener" class="gh-link">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+                        Star on GitHub
+                    </a>
+                </div>
+            </nav>
+
+            <!-- Hero -->
+            <header class="hero">
+                <div class="hero-eyebrow">
+                    <span class="hero-badge"><span class="hero-badge-dot"></span> Security Research</span>
+                    <span class="hero-badge hero-badge-outline">Proof of Concept</span>
+                </div>
+                <h1 class="hero-title">TSBIE Auth<br><span class="hero-gradient">Vulnerability PoC</span></h1>
+                <p class="hero-sub">Demonstrating how missing rate-limiting and DOB-only authentication on public student portals enables automated credential recovery — without any server-side protection.</p>
+                <div class="hero-stats">
+                    <div class="hero-stat"><div class="hero-stat-value">0</div><div class="hero-stat-label">Rate Limits</div></div>
+                    <div class="hero-stat-divider"></div>
+                    <div class="hero-stat"><div class="hero-stat-value">0</div><div class="hero-stat-label">CAPTCHAs</div></div>
+                    <div class="hero-stat-divider"></div>
+                    <div class="hero-stat"><div class="hero-stat-value">~5m</div><div class="hero-stat-label">Full Enum</div></div>
+                    <div class="hero-stat-divider"></div>
+                    <div class="hero-stat"><div class="hero-stat-value">1</div><div class="hero-stat-label">Auth Factor</div></div>
+                </div>
+            </header>
+
+            <!-- Vulnerability Cards -->
+            <section class="vuln-cards">
+                <div class="vuln-card">
+                    <div class="vuln-card-icon vuln-card-icon-red"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
+                    <h3>No Rate Limiting</h3>
+                    <p>Unlimited automated requests with zero throttling, CAPTCHA, or lockout mechanism.</p>
+                    <span class="vuln-card-severity">Critical</span>
+                </div>
+                <div class="vuln-card">
+                    <div class="vuln-card-icon vuln-card-icon-orange"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+                    <h3>DOB Enumeration</h3>
+                    <p>Authentication relies solely on date of birth — a low-entropy value easily brute-forced.</p>
+                    <span class="vuln-card-severity vuln-card-severity-high">High</span>
+                </div>
+                <div class="vuln-card">
+                    <div class="vuln-card-icon vuln-card-icon-yellow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div>
+                    <h3>PII Exposure</h3>
+                    <p>Name, photo, college, exam center and subjects accessible to any unauthenticated requester.</p>
+                    <span class="vuln-card-severity vuln-card-severity-high">High</span>
+                </div>
+                <div class="vuln-card">
+                    <div class="vuln-card-icon vuln-card-icon-green"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <h3>Remediation</h3>
+                    <p>CAPTCHA, OTP verification, and rate limiting would fully mitigate this attack vector.</p>
+                    <span class="vuln-card-severity vuln-card-severity-info">Fix Available</span>
+                </div>
+            </section>
+
+            <!-- Scanner -->
+            <section class="scanner-section" id="scanner">
+                <div class="section-label"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> Security Audit Console</div>
+                <div class="scanner-card" id="scannerCard">
+                    <div class="scanner-header">
+                        <div><h2>Launch Audit</h2><p>Configure the automated recovery parameters below</p></div>
+                        <span class="audit-badge"><span class="audit-badge-dot"></span> Automated</span>
+                    </div>
+                    <form id="scanForm" autocomplete="off">
+                        <div class="f">
+                            <label for="roll"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Roll Number</label>
+                            <div class="input-wrap">
+                                <input type="text" id="roll" placeholder="e.g. 2660208777" required spellcheck="false" maxlength="15" inputmode="numeric">
+                                <span class="input-hint">10-digit TSBIE roll number</span>
+                            </div>
+                        </div>
+                        <div class="f-row">
+                            <div class="f">
+                                <label for="startDate"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Date Range — From</label>
+                                <input type="date" id="startDate" value="2008-01-01" required>
+                            </div>
+                            <div class="f">
+                                <label for="endDate"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> To</label>
+                                <input type="date" id="endDate" value="2009-12-31" required>
+                            </div>
+                        </div>
+                        <div class="f">
+                            <label for="delay"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Request Interval <span id="delayValue" class="delay-val">100ms</span></label>
+                            <input type="range" id="delay" min="0" max="5000" value="100" step="50">
+                            <div class="range-ends"><span>0ms — no throttling</span><span>5000ms</span></div>
+                        </div>
+                        <div class="f-btns">
+                            <button type="submit" id="startBtn" class="btn btn-primary"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg> Launch Scan</button>
+                            <button type="button" id="cancelBtn" class="btn btn-ghost" disabled><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></svg> Abort</button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Progress Section -->
+            <section id="progressSection" class="hidden">
+                <div class="prog-card">
+                    <div class="prog-top">
+                        <div class="prog-title"><span class="live-dot"></span><h2>Audit in Progress</h2></div>
+                        <span id="scanStatus" class="status-badge">Connecting</span>
+                    </div>
+                    <div class="prog-stats">
+                        <div class="ps"><div class="ps-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><strong id="attemptCount">0</strong><small>Requests</small></div>
+                        <div class="ps"><div class="ps-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div><strong id="progressPercent">0%</strong><small>Coverage</small></div>
+                        <div class="ps"><div class="ps-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg></div><strong id="currentDob">—</strong><small>Testing</small></div>
+                        <div class="ps"><div class="ps-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><strong id="elapsedTime">0s</strong><small>Elapsed</small></div>
+                    </div>
+                    <div class="bar-bg"><div class="bar" id="progressBar"></div></div>
+                    <div class="activity-log">
+                        <div class="activity-log-header">
+                            <div class="activity-log-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg> Activity Log</div>
+                            <span id="logCount" class="log-count">0 entries</span>
+                        </div>
+                        <div class="activity-log-body" id="terminalBody"><div class="log-entry log-dim">Waiting for audit to start...</div></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Result Section -->
+            <section id="resultSection" class="hidden">
+                <div class="res-card">
+                    <div class="res-top">
+                        <div class="res-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+                        <h2>Record Located</h2>
+                        <p>Hall ticket successfully recovered from the TSBIE portal</p>
+                    </div>
+                    <div class="res-data">
+                        <div class="rd"><small>Roll Number</small><strong id="resultRoll"></strong></div>
+                        <div class="rd"><small>Date of Birth</small><strong id="resultDob"></strong></div>
+                        <div class="rd"><small>Attempts</small><strong id="resultAttempts"></strong></div>
+                        <div class="rd"><small>Time Taken</small><strong id="resultTime"></strong></div>
+                    </div>
+                    <div class="res-btns">
+                        <button id="downloadBtn" class="btn btn-primary"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg> Download Hall Ticket</button>
+                        <button id="viewBtn" class="btn btn-ghost"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Preview</button>
+                        <button id="newScanBtn" class="btn btn-ghost"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> New Scan</button>
+                    </div>
+                    <div id="hallTicketPreview" class="preview"></div>
+                </div>
+            </section>
+
+            <!-- Methodology -->
+            <section class="info-section">
+                <div class="section-label"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> How It Works</div>
+                <h2 class="section-h">Methodology</h2>
+                <div class="steps">
+                    <div class="step"><div class="step-n"><span>01</span></div><div class="step-content"><h4>Identify the target</h4><p>Provide the 10-digit TSBIE roll number for the record to be audited.</p></div><div class="step-line"></div></div>
+                    <div class="step"><div class="step-n"><span>02</span></div><div class="step-content"><h4>Define the enumeration range</h4><p>Set the DOB range to test. 2008–2009 covers the majority of current Inter students.</p></div><div class="step-line"></div></div>
+                    <div class="step"><div class="step-n"><span>03</span></div><div class="step-content"><h4>Execute the latency test</h4><p>The tool submits automated requests. Setting delay to 0ms demonstrates the complete absence of server-side throttling.</p></div><div class="step-line"></div></div>
+                    <div class="step"><div class="step-n"><span>04</span></div><div class="step-content"><h4>Retrieve the record</h4><p>On a successful match, the full hall ticket is returned — confirming the vulnerability is exploitable.</p></div></div>
+                </div>
+            </section>
+
+            <!-- Vulnerability Details -->
+            <section class="info-section">
+                <div class="section-label"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Security Assessment</div>
+                <h2 class="section-h">Vulnerability Details</h2>
+                <div class="vuln-table">
+                    <div class="vuln-row vuln-head"><span>Parameter</span><span>Current State</span><span>Recommended</span></div>
+                    <div class="vuln-row"><span>Rate Limiting</span><span class="vuln-bad">✕ None</span><span class="vuln-good">✓ ≤ 5 req/min</span></div>
+                    <div class="vuln-row"><span>CAPTCHA</span><span class="vuln-bad">✕ Absent</span><span class="vuln-good">✓ reCAPTCHA v3</span></div>
+                    <div class="vuln-row"><span>Account Lockout</span><span class="vuln-bad">✕ Not implemented</span><span class="vuln-good">✓ After 5 failures</span></div>
+                    <div class="vuln-row"><span>OTP Verification</span><span class="vuln-bad">✕ Not required</span><span class="vuln-good">✓ SMS / Email OTP</span></div>
+                    <div class="vuln-row"><span>Auth Factor</span><span class="vuln-bad">✕ DOB only</span><span class="vuln-good">✓ Multi-factor</span></div>
+                </div>
+            </section>
+
+            <!-- Research Notes -->
+            <section class="info-section">
+                <div class="section-label"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> FAQ</div>
+                <h2 class="section-h">Research Notes</h2>
+                <div class="faq-list">
+                    <details class="faq"><summary>What data is exposed by this vulnerability?</summary><p>Full name, father's and mother's name, date of birth, photograph, signature, college name, exam center, subjects and examination schedule.</p></details>
+                    <details class="faq"><summary>How quickly can the enumeration complete?</summary><p>With 0ms request interval, a full year of dates completes in approximately 5–6 minutes. This demonstrates the severity of the missing rate-limit control.</p></details>
+                    <details class="faq"><summary>Does the portal detect or block automated requests?</summary><p>No. As of the time of this research, the TSBIE portal has no rate limiting, CAPTCHA, or request throttling in place.</p></details>
+                    <details class="faq"><summary>What is the recommended remediation?</summary><p>Implement server-side rate limiting (e.g. 5 requests/minute per IP), add CAPTCHA on the form, and introduce OTP-based secondary verification tied to a registered mobile number.</p></details>
+                    <details class="faq"><summary>Is this tool legal to use?</summary><p>This tool is intended for authorized security research, personal data recovery, and educational purposes only. Using it to access third-party data without consent may violate the IT Act, 2000 (India) and other applicable laws.</p></details>
+                </div>
+            </section>
+
+            <!-- Footer -->
+            <footer class="foot">
+                <div class="foot-inner">
+                    <div class="foot-brand"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> roll-recovery</div>
+                    <p>Built by <a href="https://github.com/codewithriza" target="_blank" rel="noopener">@codewithriza</a> · <a href="https://github.com/codewithriza/roll-recovery" target="_blank" rel="noopener">View on GitHub</a></p>
+                    <p class="foot-sub">For authorized security research and data recovery only. Misuse is prohibited.</p>
+                    <div class="foot-badges">
+                        <span class="foot-badge">MIT License</span>
+                        <span class="foot-badge">Node.js ≥ 18</span>
+                        <span class="foot-badge">Open Source</span>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+
     <script src="app.js"></script>
 </body>
 </html>
