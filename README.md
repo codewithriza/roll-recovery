@@ -1,22 +1,10 @@
-<div align="center">
 
-<img src="images/image.png" alt="Roll Recovery Banner" width="100%">
 
-<br>
-
-# 🛡️ Roll Recovery
+#  Roll Recovery
 
 ### TSBIE Auth Vulnerability PoC — Security Research Tool
 
-[![License](https://img.shields.io/github/license/codewithriza/roll-recovery?style=for-the-badge&logo=opensourceinitiative&logoColor=white&color=0969da&labelColor=1a1a2e)](LICENSE)
-[![Stars](https://img.shields.io/github/stars/codewithriza/roll-recovery?style=for-the-badge&logo=github&logoColor=white&color=0969da&labelColor=1a1a2e)](https://github.com/codewithriza/roll-recovery/stargazers)
-[![Issues](https://img.shields.io/github/issues/codewithriza/roll-recovery?style=for-the-badge&logo=github&logoColor=white&color=0969da&labelColor=1a1a2e)](https://github.com/codewithriza/roll-recovery/issues)
-[![Node](https://img.shields.io/badge/node-%3E%3D18-0969da?style=for-the-badge&logo=node.js&logoColor=white&labelColor=1a1a2e)](https://nodejs.org/)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-0969da?style=for-the-badge&logo=git&logoColor=white&labelColor=1a1a2e)](CONTRIBUTING.md)
-
-<br>
-
-**An open-source security research tool that demonstrates critical authentication vulnerabilities on the TSBIE student portal — featuring automated DOB enumeration, real-time activity logging, and a modern research-grade interface.**
+> An open-source security research tool that demonstrates critical authentication vulnerabilities on the TSBIE student portal — featuring automated DOB enumeration, real-time activity logging, and a modern research-grade interface
 
 [🚀 Quick Start](#-quick-start) · [📖 Documentation](#-how-it-works) · [🔒 Vulnerability Details](#-vulnerability-disclosure) · [🤝 Contributing](#-contributing)
 
