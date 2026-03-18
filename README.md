@@ -17,6 +17,20 @@
 
 ---
 
+
+
+> [\!IMPORTANT]
+>
+> ### 🚨 Vulnerability Disclosure Status: **Reported**
+>
+> This repository documents critical authentication flaws and tracks the implementation of necessary security patches.
+>
+> | Authority | Date Reported | Status |
+> | :--- | :--- | :--- |
+> | **TSBIE (Telangana State Board)** | **March 14, 2026** | ⏳ Awaiting Response / Patch |
+>
+> *This documentation is maintained for educational purposes and to advocate for stronger PII protection on Indian government portals.*
+
 ## 📋 Table of Contents
 
 - [Overview](#-overview)
